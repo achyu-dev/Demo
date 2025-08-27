@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
         data: { name, email, role, message, consent }
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Form submission error:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
