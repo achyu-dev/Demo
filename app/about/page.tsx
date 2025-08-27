@@ -34,7 +34,7 @@ export default function About() {
             }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            <Card title="Simple">Clarity beats complexity in every plan and interaction.</Card>
+            <Card title="Unity">Bringing entrepreneurs and intrapreneurs together as one ecosystem.</Card>
           </motion.div>
           <motion.div
             variants={{
@@ -43,7 +43,7 @@ export default function About() {
             }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            <Card title="Practical">Tools and content grounded in real-world execution.</Card>
+            <Card title="Connectivity">Creating seamless links between ideas, people, and opportunities.</Card>
           </motion.div>
           <motion.div
             variants={{
@@ -52,7 +52,7 @@ export default function About() {
             }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            <Card title="Insightful">We learn and share insights that move founders forward.</Card>
+            <Card title="Synergy">Turning collaboration into amplified growth and sustainable impact.</Card>
           </motion.div>
         </motion.div>
       </Section>
