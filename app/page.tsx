@@ -181,7 +181,7 @@ export default function Home() {
       <Section title="What We Believe">
         <p className="max-w-3xl text-neutral-300">
           We believe that building knowledge around AI is not just about
-          technology—it's about enabling people. Startups succeed when
+          technology—it&apos;s about enabling people. Startups succeed when
           creativity meets execution, and AI gives that meeting point structure
           and scalability. By weaving AI into the startup ecosystem, we create a
           culture where entrepreneurs and intrapreneurs learn continuously,
