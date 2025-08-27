@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  @apply bg-neutral-950 text-white antialiased;
+  scroll-behavior: smooth;
+}
+
+.gradient-text {
+  @apply bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+}
+
+/* Subtle hover improvements */
+.hover-lift {
+  transition: transform 0.2s ease-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* Haptic feedback effects */
+.haptic-hover {
+  transition: all 0.2s ease-out;
+}
+
+.haptic-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.haptic-press:active {
+  transform: translateY(0px) scale(0.98);
+}
+
+.haptic-glow:hover {
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.1);
+}
+
+/* Improved focus states */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(34 211 238 / 0.3);
+}
+
+/* Subtle pulse animation */
+@keyframes subtle-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.pulse-subtle {
+  animation: subtle-pulse 2s ease-in-out infinite;
+}
+
+/* Custom animation for reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
