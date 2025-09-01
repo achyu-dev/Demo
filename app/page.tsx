@@ -215,7 +215,7 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
             >
-              <CTA href="https://discord.gg/7AsRYpv2">Join the Community</CTA>
+              <CTA href="https://discord.gg/c6AhgTs5zx">Join the Community</CTA>
             </motion.div>
           </div>
         </motion.div>

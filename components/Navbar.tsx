@@ -18,7 +18,7 @@ export default function Navbar() {
           <Link href="/wishlist" className="hover:underline transition-all duration-200 hover:text-cyan-400">
             Wishlist
           </Link>
-          <Link href="https://discord.gg/7AsRYpv2" className="hover:underline transition-all duration-200 hover:text-cyan-400">
+          <Link href="https://discord.gg/c6AhgTs5zx" className="hover:underline transition-all duration-200 hover:text-cyan-400">
             Community
           </Link>
         </div>

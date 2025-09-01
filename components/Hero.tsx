@@ -29,7 +29,7 @@ export default function Hero() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
       >
-        <CTA href="https://discord.gg/7AsRYpv2">Join the Community</CTA>
+        <CTA href="https://discord.gg/c6AhgTs5zx">Join the Community</CTA>
         <CTA href="/wishlist#list" variant="secondary">
           See Wishlist
         </CTA>
