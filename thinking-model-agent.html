@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Codex Thinking Agent</title>
+<style>
+/* -----------------------
+   Dark Theme Variables
+----------------------- */
+:root{
+  --bg:#0f1115; --panel:#151823; --muted:#1c2030;
+  --text:#e6e8ef; --subtle:#a6accd; --accent:#6ea8fe;
+  --ok:#27c07d; --warn:#e8b84a; --danger:#f47174;
+  --radius:6px;
+}
+html.light{
+  --bg:#f7f8fa; --panel:#fff; --muted:#e5e7eb;
+  --text:#1a1c24; --subtle:#384052; --accent:#3366ee;
+  --ok:#27c07d; --warn:#e8b84a; --danger:#d13f45;
+}
+/* Base Styles */
+*{box-sizing:border-box;}body{margin:0;font-family:system-ui, sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;}a{color:var(--accent);}button{cursor:pointer;}input,select,textarea,button{background:var(--muted);color:var(--text);border:1px solid var(--subtle);border-radius:var(--radius);padding:4px 8px;font-size:14px;}input:focus,select:focus,textarea:focus,button:focus{outline:2px solid var(--accent);outline-offset:2px;}table{border-collapse:collapse;width:100%;}th,td{padding:6px 8px;border-bottom:1px solid var(--muted);}th{position:sticky;top:0;background:var(--panel);text-align:left;}
+/* Layout */
+#sidebar{width:220px;background:var(--panel);display:flex;flex-direction:column;}#sidebar h1{font-size:18px;margin:16px;}#sidebar ul{list-style:none;padding:0;margin:0;}#sidebar li{padding:10px 16px;border-left:4px solid transparent;}#sidebar li.active{background:var(--muted);border-left-color:var(--accent);}#sidebar li:hover{background:var(--muted);}#main{flex:1;display:flex;flex-direction:column;}#topbar{height:50px;background:var(--panel);display:flex;align-items:center;justify-content:space-between;padding:0 16px;}#content{flex:1;overflow:auto;padding:16px;}#domainSwitcher{margin-left:auto;margin-right:8px;}#quickActions button{margin-left:8px;}
+/* Cards, tiles */
+.card{background:var(--panel);padding:12px;border-radius:var(--radius);margin:8px 0;} .grid{display:grid;gap:12px;} .grid.three{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));}
+.pill{display:inline-block;padding:2px 6px;border-radius:var(--radius);border:1px solid var(--subtle);font-size:12px;margin-right:4px;} .status-active{background:var(--ok);color:#000;} .status-inactive{background:var(--danger);}
+/* Modal & Drawer */
+#modal,#drawer{position:fixed;top:0;left:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;}#modal.show,#drawer.show{display:flex;}#modal .box{background:var(--panel);padding:16px;border-radius:var(--radius);width:90%;max-width:500px;max-height:90%;overflow:auto;}#drawer{justify-content:flex-end;}#drawer .box{background:var(--panel);width:300px;height:100%;overflow:auto;padding:16px;}#backdrop{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);}#toast-container{position:fixed;bottom:10px;right:10px;display:flex;flex-direction:column;gap:6px;} .toast{background:var(--panel);padding:8px 12px;border-left:4px solid var(--accent);border-radius:var(--radius);} 
+/* Kanban */
+.board{display:flex;gap:12px;overflow-x:auto;} .column{background:var(--panel);padding:8px;border-radius:var(--radius);min-width:250px;display:flex;flex-direction:column;} .column h3{text-align:center;margin:4px 0;} .kanban-card{background:var(--muted);margin:4px 0;padding:8px;border-radius:var(--radius);}
+/* Responsive */
+@media(max-width:768px){#sidebar{position:fixed;left:-220px;top:0;height:100%;z-index:5;transition:left .3s;}#sidebar.open{left:0;}#topbar{justify-content:space-between;}#topbar .menu-btn{display:block;}#topbar .brand{margin-left:8px;}body.mobile #sidebar{position:fixed;}#main{margin-left:0;}}
+</style>
+</head>
+<body>
+<nav id="sidebar" aria-label="Main navigation">
+  <h1>Codex Thinking Agent</h1>
+  <ul>
+    <li data-route="dashboard" class="active" tabindex="0">Dashboard</li>
+    <li data-route="models" tabindex="0">Thinking Models</li>
+    <li data-route="workflows" tabindex="0">Workflows</li>
+    <li data-route="analytics" tabindex="0">Analytics & Reports</li>
+    <li data-route="settings" tabindex="0">Settings</li>
+  </ul>
+</nav>
+<div id="main">
+  <header id="topbar">
+    <button class="menu-btn" aria-label="Toggle menu" style="display:none">☰</button>
+    <div class="brand">Codex Thinking Agent</div>
+    <select id="domainSwitcher" aria-label="Domain Switcher"></select>
+    <div id="quickActions">
+      <button id="addModelBtn">Add Model</button>
+      <button id="addCardBtn">Add Workflow Card</button>
+    </div>
+  </header>
+  <main id="content" tabindex="-1"></main>
+</div>
+<div id="modal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div id="backdrop"></div>
+  <div class="box" tabindex="0"></div>
+</div>
+<div id="drawer" role="complementary" aria-label="Details" aria-hidden="true">
+  <div id="backdrop"></div>
+  <div class="box" tabindex="0"></div>
+</div>
+<div id="toast-container" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+/* ---------- Helpers & Storage ---------- */
+const KEYS={domains:'tm_domains',models:'tm_models',work:'tm_work',runs:'tm_runs',quality:'tm_quality',bias:'tm_bias',metrics:'tm_metrics',prefs:'tm_prefs',filters:'tm_filters'};
+const save=(k,d)=>localStorage.setItem(k,JSON.stringify(d));
+const load=k=>JSON.parse(localStorage.getItem(k)||'null');
+function initDemoData(){
+ if(!load(KEYS.domains)) save(KEYS.domains,["Strategy","Finance","Marketing"]);
+ if(!load(KEYS.models)) save(KEYS.models,[
+  {id:1,name:"Research",purpose:"Gather info",inputs:["Problem Brief"],outputs:["Findings"],status:"active",domains:["Strategy","Finance","Marketing"],params:{depth:2}},
+  {id:2,name:"Planning",purpose:"Outline steps",inputs:["Findings"],outputs:["Plan"],status:"active",domains:["Strategy"],params:{}},
+  {id:3,name:"Scenarios",purpose:"What if analysis",inputs:["Data"],outputs:["Options"],status:"active",domains:["Finance"],params:{}},
+  {id:4,name:"Action",purpose:"Execute plan",inputs:["Plan"],outputs:["Result"],status:"inactive",domains:["Marketing"],params:{}},
+  {id:5,name:"Presenting",purpose:"Communicate",inputs:["Result"],outputs:["Report"],status:"active",domains:["Strategy"],params:{}},
+  {id:6,name:"Follow-through",purpose:"Ensure adoption",inputs:["Report"],outputs:["Feedback"],status:"inactive",domains:["Strategy"],params:{}},
+  {id:7,name:"Feedback",purpose:"Collect reactions",inputs:["Questionnaire"],outputs:["Insights"],status:"active",domains:["Marketing"],params:{}},
+  {id:8,name:"Metrics",purpose:"Measure performance",inputs:["Logs"],outputs:["Scores"],status:"inactive",domains:["Finance"],params:{}},
+  {id:9,name:"Bias Reduction",purpose:"Detect bias",inputs:["Data"],outputs:["Bias Score"],status:"active",domains:["Strategy","Marketing"],params:{}},
+  {id:10,name:"Continuous Learning",purpose:"Update models",inputs:["Feedback"],outputs:["Model"],status:"inactive",domains:["Strategy"],params:{}},
+  {id:11,name:"Scalability",purpose:"Handle growth",inputs:["Traffic"],outputs:["Plan"],status:"active",domains:["Finance"],params:{}}
+ ]);
+ if(!load(KEYS.work)) save(KEYS.work,[
+  {id:1,title:"Optimize Budget",domain:"Finance",priority:"High",modelId:3,stage:"Research",description:"Need to cut costs",subtasks:[{text:"Gather data",done:false}],progress:20},
+  {id:2,title:"Launch Campaign",domain:"Marketing",priority:"Medium",modelId:4,stage:"Planning",description:"New product",subtasks:[{text:"Define goals",done:true}],progress:40},
+  {id:3,title:"Market Analysis",domain:"Strategy",priority:"Low",modelId:1,stage:"Research",description:"Explore trends",subtasks:[{text:"Collect reports",done:false}],progress:10},
+  {id:4,title:"Customer Survey",domain:"Marketing",priority:"High",modelId:7,stage:"Execution",description:"Survey customers",subtasks:[{text:"Design survey",done:true},{text:"Send survey",done:false}],progress:50},
+  {id:5,title:"Revenue Forecast",domain:"Finance",priority:"Medium",modelId:3,stage:"Feedback",description:"Forecast next quarter",subtasks:[{text:"Model scenarios",done:true}],progress:80},
+  {id:6,title:"Improve UX",domain:"Strategy",priority:"High",modelId:5,stage:"Planning",description:"Better onboarding",subtasks:[{text:"Interview users",done:false}],progress:30},
+  {id:7,title:"Risk Assessment",domain:"Finance",priority:"Low",modelId:3,stage:"Research",description:"Assess risks",subtasks:[{text:"Collect data",done:true}],progress:20},
+  {id:8,title:"Brand Audit",domain:"Marketing",priority:"Medium",modelId:7,stage:"Feedback",description:"Review brand",subtasks:[{text:"Compile assets",done:false}],progress:60},
+  {id:9,title:"Strategy Review",domain:"Strategy",priority:"High",modelId:9,stage:"Execution",description:"Revisit strategy",subtasks:[{text:"Workshop",done:false}],progress:70},
+  {id:10,title:"Compliance Check",domain:"Finance",priority:"Medium",modelId:8,stage:"Planning",description:"Check regulations",subtasks:[{text:"List rules",done:false}],progress:40}
+ ]);
+ if(!load(KEYS.runs)){
+  const today=new Date();const runs=[];for(let i=29;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);const iso=d.toISOString().split('T')[0];const domains=load(KEYS.domains);domains.forEach(dom=>runs.push({dateISO:iso,domain:dom,runs:Math.floor(Math.random()*5)+1}));}
+  save(KEYS.runs,runs);
+ }
+ if(!load(KEYS.quality)) save(KEYS.quality,[{project:"Apollo",qualityScore:72},{project:"Gemini",qualityScore:65},{project:"Hermes",qualityScore:80}]);
+ if(!load(KEYS.bias)) save(KEYS.bias,load(KEYS.models).map(m=>({modelId:m.id,score:Math.floor(Math.random()*50)+50})));
+ if(!load(KEYS.metrics)) save(KEYS.metrics,{tasksSolved:128,efficiencyPct:76,biasReductionPct:34});
+ if(!load(KEYS.prefs)) save(KEYS.prefs,{theme:'dark'});
+ applyTheme(load(KEYS.prefs).theme);
+ if(!load(KEYS.filters)) save(KEYS.filters,{domain:'All'});
+}
+/* ---------- UI Rendering ---------- */
+const content=document.getElementById('content');
+const sidebar=document.querySelectorAll('#sidebar li');
+sidebar.forEach(li=>li.addEventListener('click',()=>navigate(li.dataset.route)));
+sidebar.forEach(li=>li.addEventListener('keydown',e=>{if(e.key==='Enter')navigate(li.dataset.route);}));
+function setActive(route){sidebar.forEach(li=>li.classList.toggle('active',li.dataset.route===route));}
+function navigate(route){setActive(route); if(route==='dashboard')renderDashboard(); if(route==='models')renderModels(); if(route==='workflows')renderWorkflows(); if(route==='analytics')renderAnalytics(); if(route==='settings')renderSettings(); content.focus();}
+/* --- Topbar --- */
+function renderTopbar(){const sel=document.getElementById('domainSwitcher');const domains=load(KEYS.domains);sel.innerHTML='<option value="All">All Domains</option>'+domains.map(d=>`<option>${d}</option>`).join('');sel.value=load(KEYS.filters).domain;sel.onchange=()=>{const f=load(KEYS.filters);f.domain=sel.value;save(KEYS.filters,f);navigate(document.querySelector('#sidebar li.active').dataset.route);};document.getElementById('addModelBtn').onclick=()=>openModelModal();document.getElementById('addCardBtn').onclick=()=>addCard();}
+/* ---------- Dashboard ---------- */
+function renderDashboard(){const models=load(KEYS.models).filter(m=>m.status==='active');const domain=load(KEYS.filters).domain;const filtered=models.filter(m=>domain==='All'||m.domains.includes(domain));const tableRows=filtered.map(m=>`<tr><td>${m.name}</td><td>${m.domains.join(', ')}</td><td><span class="pill status-${m.status}">${m.status}</span></td><td>${m.inputs.join(',')}</td><td>${m.outputs.join(',')}</td><td>${new Date().toLocaleDateString()}</td></tr>`).join('');
+const work=load(KEYS.work).filter(w=>domain==='All'||w.domain===domain);
+const cards=work.map(w=>`<div class="card" tabindex="0" data-id="${w.id}"><h4>${w.title}</h4><div>${w.domain} <span class="pill">${w.priority}</span></div><div>Model: ${modelName(w.modelId)}</div><div>Stage: ${w.stage}</div></div>`).join('');
+const metrics=load(KEYS.metrics);
+content.innerHTML=`<section aria-labelledby="modelsHead"><h2 id="modelsHead">Active Thinking Models</h2><div style="overflow:auto"><table><thead><tr><th>Model Name</th><th>Domain</th><th>Status</th><th>Inputs</th><th>Outputs</th><th>Last Run</th></tr></thead><tbody>${tableRows}</tbody></table></div></section>
+<section><h2>Current Business Challenges</h2><div class="grid three">${cards}</div></section>
+<section><h2>Key Metrics</h2><div class="grid three"><div class="card"><div>Tasks Solved</div><div>${metrics.tasksSolved}</div><canvas id="spark1" width="80" height="30" aria-hidden="true"></canvas></div><div class="card"><div>Efficiency (%)</div><div>${metrics.efficiencyPct}</div><canvas id="spark2" width="80" height="30"></canvas></div><div class="card"><div>Bias Reduction (%)</div><div>${metrics.biasReductionPct}</div><canvas id="spark3" width="80" height="30"></canvas></div></div></section>`;
+content.querySelectorAll('.card[data-id]').forEach(c=>c.onclick=()=>openDrawer(parseInt(c.dataset.id)));drawSpark('spark1');drawSpark('spark2');drawSpark('spark3');}
+function drawSpark(id){const c=document.getElementById(id);if(!c)return;const ctx=c.getContext('2d');const w=c.width,h=c.height;ctx.clearRect(0,0,w,h);ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent');ctx.beginPath();for(let i=0;i<10;i++){const x=i/(9)*w;const y=h - Math.random()*h; if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);}ctx.stroke();}
+function modelName(id){const m=load(KEYS.models).find(m=>m.id===id);return m?m.name:'';}
+/* ---------- Models ---------- */
+function renderModels(){const models=load(KEYS.models);const rows=models.map(m=>`<tr><td>${m.name}</td><td>${m.purpose}</td><td>${m.inputs.map(i=>`<span class='pill'>${i}</span>`).join('')}</td><td>${m.outputs.map(o=>`<span class='pill'>${o}</span>`).join('')}</td><td><button role="switch" aria-checked="${m.status==='active'}" data-id="${m.id}" class="toggle">${m.status==='active'?'On':'Off'}</button></td><td><button data-id="${m.id}" class="config">Configure</button></td></tr>`).join('');
+content.innerHTML=`<h2>Thinking Models</h2><div style="overflow:auto"><table id="modelsTable"><thead><tr><th>Model/Plugin</th><th>Purpose</th><th>Inputs</th><th>Outputs</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+content.querySelectorAll('.toggle').forEach(btn=>btn.onclick=()=>toggleModel(btn.dataset.id));
+content.querySelectorAll('.config').forEach(btn=>btn.onclick=()=>openModelModal(btn.dataset.id));
+}
+function toggleModel(id){const models=load(KEYS.models);const m=models.find(x=>x.id==id);m.status=m.status==='active'?'inactive':'active';save(KEYS.models,models);toast('Status updated');renderModels();}
+function openModelModal(id){const models=load(KEYS.models);let m=id?models.find(x=>x.id==id):{id:Date.now(),name:'New Model',purpose:'',inputs:[],outputs:[],status:'active',domains:load(KEYS.domains),params:{}};const box=document.querySelector('#modal .box');box.innerHTML=`<h2>${id?'Configure':'Add'} Model</h2><label>Name<input id="mmName" value="${m.name}" ${id?'readonly':''}></label><label>Purpose<textarea id="mmPurpose">${m.purpose}</textarea></label><label>Inputs<input id="mmInputs" value="${m.inputs.join(',')}"></label><label>Outputs<input id="mmOutputs" value="${m.outputs.join(',')}"></label><label>Domains<select id="mmDomains" multiple size="3">${load(KEYS.domains).map(d=>`<option ${m.domains.includes(d)?'selected':''}>${d}</option>`).join('')}</select></label><div style="margin-top:8px"><button id="mmSave">Save</button> <button id="mmCancel">Cancel</button></div>`;openModal();document.getElementById('mmSave').onclick=()=>{m.purpose=document.getElementById('mmPurpose').value;m.inputs=document.getElementById('mmInputs').value.split(',').filter(Boolean);m.outputs=document.getElementById('mmOutputs').value.split(',').filter(Boolean);m.domains=[...document.getElementById('mmDomains').selectedOptions].map(o=>o.value);if(!id){models.push(m);}save(KEYS.models,models);closeModal();toast('Saved');renderModels();};document.getElementById('mmCancel').onclick=closeModal;}
+/* ---------- Workflows ---------- */
+function renderWorkflows(){const stages=['Research','Planning','Execution','Feedback'];const work=load(KEYS.work);const board=stages.map(s=>`<div class="column" data-stage="${s}"><h3>${s}</h3><div class="cards">${work.filter(w=>w.stage===s).map(c=>cardHTML(c)).join('')}</div></div>`).join('');content.innerHTML=`<h2>Workflows</h2><div class="board">${board}</div>`;stages.forEach(s=>new Sortable(content.querySelector(`[data-stage='${s}'] .cards`),{group:'stage',animation:150,onEnd:e=>{const id=parseInt(e.item.dataset.id);const w=load(KEYS.work);w.find(c=>c.id===id).stage=e.to.dataset.stage;save(KEYS.work,w);}}));content.querySelectorAll('.kanban-card').forEach(c=>c.onclick=()=>openDrawer(parseInt(c.dataset.id)));}
+function cardHTML(w){return `<div class="kanban-card" tabindex="0" data-id="${w.id}"><div>${w.title}</div><div>${w.domain} <span class="pill">${w.priority}</span></div><div>Model: ${modelName(w.modelId)}</div><div><div style="background:var(--muted);height:6px;border-radius:var(--radius);"><div style="width:${w.progress}%;background:var(--accent);height:100%;"></div></div></div></div>`;}
+function addCard(){const w=load(KEYS.work);const id=Date.now();w.push({id,title:"New Problem",domain:load(KEYS.domains)[0],priority:"Low",modelId:load(KEYS.models)[0].id,stage:"Research",description:"",subtasks:[],progress:0});save(KEYS.work,w);toast('Card added');navigate('workflows');}
+/* ---------- Analytics ---------- */
+function renderAnalytics(){const f=load(KEYS.filters);const runs=load(KEYS.runs).filter(r=>f.domain==='All'||r.domain===f.domain);const tableRows=runs.map(r=>`<tr><td>${r.dateISO}</td><td>${r.domain}</td><td>${modelName(3)}</td><td>${r.runs}</td><td>${Math.floor(Math.random()*100)}</td><td>${Math.random()>.5?'Success':'Fail'}</td><td>n/a</td></tr>`).join('');content.innerHTML=`<h2>Analytics & Reports</h2><div><label>From<input type="date" id="fromDate"></label><label>To<input type="date" id="toDate"></label><label>Domain<select id="filterDomain"><option>All</option>${load(KEYS.domains).map(d=>`<option>${d}</option>`).join('')}</select></label><button id="applyFilters">Apply</button> <button id="exportCSV">Export CSV</button></div><div style="overflow:auto"><table id="usageTable"><thead><tr><th>Date</th><th>Domain</th><th>Model Used</th><th>Runs</th><th>Avg Duration</th><th>Outcome</th><th>Notes</th></tr></thead><tbody>${tableRows}</tbody></table></div><canvas id="lineChart" height="120"></canvas><canvas id="barChart" height="120"></canvas><canvas id="radialChart" height="120"></canvas>`;document.getElementById('filterDomain').value=f.domain;document.getElementById('applyFilters').onclick=()=>{const nf={domain:document.getElementById('filterDomain').value};save(KEYS.filters,nf);renderAnalytics();};document.getElementById('exportCSV').onclick=()=>exportTableToCSV('usageTable','usage.csv');drawCharts(runs);} 
+function drawCharts(runs){const ctx=document.getElementById('lineChart');new Chart(ctx,{type:'line',data:{labels:[...new Set(runs.map(r=>r.dateISO))],datasets:load(KEYS.domains).map(d=>({label:d,data:runs.filter(r=>r.domain===d).map(r=>r.runs),borderColor:randomColor(),tension:.1}))},options:{responsive:true,maintainAspectRatio:false}});
+const ctx2=document.getElementById('barChart');const quality=load(KEYS.quality);new Chart(ctx2,{type:'bar',data:{labels:quality.map(q=>q.project),datasets:[{label:'Quality',data:quality.map(q=>q.qualityScore),backgroundColor:randomColor(quality.length)}]},options:{responsive:true,maintainAspectRatio:false}});
+const ctx3=document.getElementById('radialChart');const bias=load(KEYS.bias);new Chart(ctx3,{type:'radar',data:{labels:bias.map(b=>modelName(b.modelId)),datasets:[{label:'Bias Reduction',data:bias.map(b=>b.score),borderColor:randomColor(),backgroundColor:'rgba(110,168,254,0.2)'}]},options:{responsive:true,maintainAspectRatio:false}});}function randomColor(len=1){return Array.from({length:len},()=>`hsl(${Math.random()*360},70%,60%)`);}
+function exportTableToCSV(id,filename){const rows=[...document.querySelectorAll(`#${id} tr`)].map(tr=>[...tr.children].map(td=>`"${td.innerText}"`).join(','));const csv=rows.join('\n');const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();toast('Exported');}
+/* ---------- Settings ---------- */
+function renderSettings(){const prefs=load(KEYS.prefs);const domains=load(KEYS.domains);const domainList=domains.map((d,i)=>`<li draggable="true" data-i="${i}"><input type="checkbox" checked> ${d}</li>`).join('');content.innerHTML=`<h2>Settings</h2><section><h3>Theme</h3><label><input type="checkbox" id="themeToggle" ${prefs.theme==='light'?'':'checked'}> Dark Mode</label></section><section><h3>Domain Management</h3><ul id="domainList">${domainList}</ul></section><section><h3>Data</h3><button id="resetData">Reset Demo Data</button></section><section><h3>About</h3><p>Version 1.0.0 - Demo</p><p>Credits: Plain-text demo</p></section>`;document.getElementById('themeToggle').onchange=e=>applyTheme(e.target.checked?'dark':'light');new Sortable(document.getElementById('domainList'),{animation:150,onEnd:updateDomainOrder});document.getElementById('resetData').onclick=()=>{localStorage.clear();initDemoData();toast('Data reset');navigate('dashboard');};}
+function updateDomainOrder(){const lis=[...document.querySelectorAll('#domainList li')];const domains=lis.map(li=>li.textContent.trim());save(KEYS.domains,domains);renderTopbar();}
+function applyTheme(mode){const html=document.documentElement;html.classList.toggle('light',mode==='light');const prefs=load(KEYS.prefs)||{};prefs.theme=mode;save(KEYS.prefs,prefs);} 
+/* ---------- Drawer ---------- */
+function openDrawer(id){const w=load(KEYS.work).find(c=>c.id===id);const box=document.querySelector('#drawer .box');box.innerHTML=`<h2>${w.title}</h2><p>${w.description}</p><h3>Subtasks</h3><ul>${w.subtasks.map((s,i)=>`<li><label><input type="checkbox" data-i="${i}" ${s.done?'checked':''}> ${s.text}</label></li>`).join('')}</ul><p>Model: ${modelName(w.modelId)}</p><p>Domain: ${w.domain}</p><p>Priority: ${w.priority}</p><button id="jumpWorkflow">Jump to Workflow</button>`;box.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.onchange=()=>{w.subtasks[cb.dataset.i].done=cb.checked;save(KEYS.work,load(KEYS.work));});document.getElementById('jumpWorkflow').onclick=()=>{closeDrawer();navigate('workflows');};openPanel('#drawer');}
+function openPanel(sel){const panel=document.querySelector(sel);panel.classList.add('show');panel.setAttribute('aria-hidden','false');panel.querySelector('.box').focus();document.addEventListener('keydown',escClose);}function closeDrawer(){closePanel('#drawer');}
+function openModal(){openPanel('#modal');document.getElementById('backdrop').onclick=closeModal;}function closeModal(){closePanel('#modal');}
+function closePanel(sel){const panel=document.querySelector(sel);panel.classList.remove('show');panel.setAttribute('aria-hidden','true');document.removeEventListener('keydown',escClose);}function escClose(e){if(e.key==='Escape'){closeModal();closeDrawer();}}
+/* ---------- Toast ---------- */
+function toast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),3000);} 
+/* ---------- Init ---------- */
+initDemoData();renderTopbar();navigate('dashboard');
+</script>
+</body>
+</html>
