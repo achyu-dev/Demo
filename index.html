@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Thinking Model Agent</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<style>
+body {font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;}
+</style>
+</head>
+<body class="bg-gray-100 text-gray-900">
+<nav class="fixed top-0 inset-x-0 h-12 bg-gray-800 text-white flex items-center justify-between px-4 z-20" aria-label="Top Navigation">
+ <div class="flex items-center space-x-2">
+  <button id="sidebarToggle" class="p-1 focus:outline-none" aria-label="Toggle Sidebar">☰</button>
+  <span class="font-bold">Thinking Model Agent</span>
+ </div>
+ <div id="domainSwitcher" class="inline-flex rounded overflow-hidden" role="group" aria-label="Business Domain">
+  <button data-domain="Strategy" class="px-3 py-1 bg-white text-gray-800">Strategy</button>
+  <button data-domain="Finance" class="px-3 py-1 bg-gray-700 text-white">Finance</button>
+  <button data-domain="Marketing" class="px-3 py-1 bg-gray-700 text-white">Marketing</button>
+ </div>
+</nav>
+<aside id="sidebar" class="fixed top-12 bottom-0 left-0 w-56 bg-gray-200 overflow-y-auto transform transition-transform" aria-label="Sidebar">
+ <ul id="menu" class="mt-4">
+  <li data-route="dashboard" class="px-4 py-2 cursor-pointer bg-gray-300">Dashboard</li>
+  <li data-route="models" class="px-4 py-2 cursor-pointer hover:bg-gray-300">Thinking Models</li>
+  <li data-route="workflows" class="px-4 py-2 cursor-pointer hover:bg-gray-300">Workflows</li>
+  <li data-route="analytics" class="px-4 py-2 cursor-pointer hover:bg-gray-300">Analytics &amp; Reports</li>
+  <li data-route="settings" class="px-4 py-2 cursor-pointer hover:bg-gray-300">Settings</li>
+ </ul>
+</aside>
+<main id="content" class="pt-14 ml-56 p-4"></main>
+<!-- Modal for model config -->
+<div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-30" aria-hidden="true">
+ <div class="bg-white p-4 rounded shadow max-w-lg w-full" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <h2 id="modalTitle" class="text-lg font-bold mb-2">Configure Model</h2>
+  <form id="configForm" class="space-y-2">
+   <div>
+    <label class="block text-sm">Inputs (comma separated)</label>
+    <input type="text" name="inputs" class="w-full border p-1" />
+   </div>
+   <div>
+    <label class="block text-sm">Outputs (comma separated)</label>
+    <input type="text" name="outputs" class="w-full border p-1" />
+   </div>
+   <div class="flex justify-end space-x-2 pt-2">
+    <button type="button" id="cancelConfig" class="px-3 py-1 border">Cancel</button>
+    <button type="submit" class="px-3 py-1 bg-blue-600 text-white">Save</button>
+   </div>
+  </form>
+ </div>
+</div>
+<!-- Workflow side panel -->
+<div id="panel" class="fixed top-12 right-0 bottom-0 w-80 bg-white shadow transform translate-x-full transition-transform z-30" aria-hidden="true">
+ <div class="p-4 h-full flex flex-col" role="dialog" aria-modal="true" aria-labelledby="panelTitle">
+  <h2 id="panelTitle" class="text-lg font-bold mb-2">Workflow</h2>
+  <div class="flex-1 overflow-y-auto">
+   <form id="workflowForm" class="space-y-2">
+    <div>
+     <label class="block text-sm">Title</label>
+     <input type="text" name="title" class="w-full border p-1" />
+    </div>
+    <div>
+     <label class="block text-sm">Description</label>
+     <textarea name="desc" class="w-full border p-1"></textarea>
+    </div>
+    <div>
+     <label class="block text-sm">Bind to Model</label>
+     <select name="model" class="w-full border p-1"></select>
+    </div>
+   </form>
+  </div>
+  <div class="pt-2 flex justify-end space-x-2">
+   <button id="closePanel" class="px-3 py-1 border">Cancel</button>
+   <button id="saveWorkflow" class="px-3 py-1 bg-blue-600 text-white">Save</button>
+  </div>
+ </div>
+</div>
+<script>
+// Application state
+const state = {
+ domain: 'Strategy',
+ settings: {orgName:'Acme Corp',defaultDomain:'Strategy',highPriorityThreshold:80,biasTarget:25},
+ models: [
+  {id:1,name:'Market Analyzer',status:'Active',owner:'Alice',inputs:['Market Data'],outputs:['Insights'],plugins:['Research','Planning'],lastRun:'2024-06-01',domain:'Strategy'},
+  {id:2,name:'Cost Optimizer',status:'Idle',owner:'Bob',inputs:['Costs'],outputs:['Savings'],plugins:['Metrics','Action'],lastRun:'2024-05-20',domain:'Finance'},
+  {id:3,name:'Ad Campaigner',status:'Disabled',owner:'Carol',inputs:['Audience'],outputs:['Ad Plan'],plugins:['Scenarios'],lastRun:'2024-05-10',domain:'Marketing'}
+ ],
+ pluginsCatalog: [
+  {name:'Research',purpose:'Gather data',expectedInputs:['Query'],expectedOutputs:['Facts']},
+  {name:'Planning',purpose:'Devise plan',expectedInputs:['Facts'],expectedOutputs:['Plan']},
+  {name:'Scenarios',purpose:'Generate scenarios',expectedInputs:['Plan'],expectedOutputs:['Options']},
+  {name:'Action',purpose:'Execute plan',expectedInputs:['Options'],expectedOutputs:['Result']},
+  {name:'Presenting',purpose:'Present findings',expectedInputs:['Result'],expectedOutputs:['Report']},
+  {name:'Follow-through',purpose:'Monitor execution',expectedInputs:['Report'],expectedOutputs:['Updates']},
+  {name:'Feedback',purpose:'Collect feedback',expectedInputs:['Updates'],expectedOutputs:['Feedback']},
+  {name:'Metrics',purpose:'Measure performance',expectedInputs:['Data'],expectedOutputs:['Metrics']},
+  {name:'Bias Reduction',purpose:'Mitigate bias',expectedInputs:['Insights'],expectedOutputs:['Balanced View']},
+  {name:'Continuous Learning',purpose:'Learn over time',expectedInputs:['Feedback'],expectedOutputs:['Knowledge']},
+  {name:'Scalability',purpose:'Scale process',expectedInputs:['Knowledge'],expectedOutputs:['Growth']}
+ ],
+ workflows:[
+  {id:1,title:'Q2 Market Research',desc:'Gather market intel',priority:'High',linkedModelId:1,stage:'Research',domain:'Strategy'},
+  {id:2,title:'Budget Review',desc:'Analyze spending',priority:'Med',linkedModelId:2,stage:'Planning',domain:'Finance'},
+  {id:3,title:'Ad Copy',desc:'Create ad text',priority:'Low',linkedModelId:null,stage:'Execution',domain:'Marketing'}
+ ],
+ challenges:[
+  {id:1,title:'Enter new market',desc:'Assess viability',priority:'High',modelId:1,domain:'Strategy'},
+  {id:2,title:'Reduce costs',desc:'Find savings',priority:'Med',modelId:2,domain:'Finance'},
+  {id:3,title:'Improve ROI',desc:'Optimize ads',priority:'Low',modelId:null,domain:'Marketing'}
+ ],
+ analytics:{
+  runs:[
+   {date:'2024-05-01',modelId:1,count:5},
+   {date:'2024-05-02',modelId:1,count:3},
+   {date:'2024-05-01',modelId:2,count:2},
+   {date:'2024-05-03',modelId:3,count:1}
+  ],
+  usageStats:[
+   {modelId:1,runs:8,avgDuration:120,success:90,errors:1},
+   {modelId:2,runs:2,avgDuration:240,success:80,errors:1},
+   {modelId:3,runs:1,avgDuration:180,success:70,errors:0}
+  ],
+  decisionQuality:[
+   {modelId:1,score:85,notes:'Good'},
+   {modelId:2,score:70,notes:'Needs improvement'},
+   {modelId:3,score:60,notes:'Low data'}
+  ],
+  biasReduction:[
+   {modelId:1,score:30},
+   {modelId:2,score:20},
+   {modelId:3,score:10}
+  ]
+ }
+};
+let currentRoute = 'dashboard';
+let selectedModelId = 1;
+let charts = {};
+
+function init(){
+ document.getElementById('domainSwitcher').addEventListener('click',e=>{
+  if(e.target.dataset.domain){state.domain=e.target.dataset.domain;updateDomainSwitcher();renderRoute(currentRoute);}
+ });
+ document.getElementById('menu').addEventListener('click',e=>{
+  if(e.target.dataset.route){renderRoute(e.target.dataset.route);}
+ });
+ document.getElementById('sidebarToggle').addEventListener('click',toggleSidebar);
+ document.getElementById('cancelConfig').addEventListener('click',closeModal);
+ document.getElementById('configForm').addEventListener('submit',saveModelConfig);
+ document.getElementById('closePanel').addEventListener('click',closePanel);
+ document.getElementById('saveWorkflow').addEventListener('click',saveWorkflow);
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closePanel();}});
+ updateDomainSwitcher();
+ renderRoute('dashboard');
+}
+window.addEventListener('load',init);
+
+function updateDomainSwitcher(){
+ const buttons=document.querySelectorAll('#domainSwitcher button');
+ buttons.forEach(b=>{
+  if(b.dataset.domain===state.domain){b.classList.add('bg-white','text-gray-800');b.classList.remove('bg-gray-700','text-white');}
+  else{b.classList.remove('bg-white','text-gray-800');b.classList.add('bg-gray-700','text-white');}
+ });
+}
+function highlightMenu(route){
+ const items=document.querySelectorAll('#menu li');
+ items.forEach(i=>{
+  if(i.dataset.route===route){i.classList.add('bg-gray-300');}
+  else{i.classList.remove('bg-gray-300');}
+ });
+}
+function renderRoute(route){
+ currentRoute=route;highlightMenu(route);
+ const content=document.getElementById('content');
+ content.innerHTML='';
+ if(route==='dashboard')renderDashboard(content);
+ if(route==='models')renderModels(content);
+ if(route==='workflows')renderWorkflows(content);
+ if(route==='analytics')renderAnalytics(content);
+ if(route==='settings')renderSettings(content);
+}
+// DASHBOARD
+function renderDashboard(root){
+ const models=state.models.filter(m=>m.domain===state.domain);
+ if(!models.length){root.innerHTML='<p>No models for this domain. <button class="underline" id="resetDomain">Reset</button></p>';document.getElementById('resetDomain').onclick=()=>{state.domain=state.settings.defaultDomain;updateDomainSwitcher();renderRoute('dashboard');};return;}
+ const table=document.createElement('table');
+ table.className='min-w-full bg-white';
+ table.innerHTML='<thead><tr><th class="p-2 text-left">Model</th><th class="p-2">Status</th><th class="p-2">Last Run</th><th class="p-2">Owner</th></tr></thead>';
+ const tbody=document.createElement('tbody');
+ models.forEach(m=>{
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td class="border p-2">${m.name}</td><td class="border p-2"><span class="px-2 py-1 rounded text-xs ${statusColor(m.status)}">${m.status}</span></td><td class="border p-2">${m.lastRun}</td><td class="border p-2">${m.owner}</td>`;
+  tbody.appendChild(tr);
+ });
+ table.appendChild(tbody);root.appendChild(table);
+ // Challenges
+ const challenges=state.challenges.filter(c=>c.domain===state.domain);
+ const grid=document.createElement('div');grid.className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4';
+ challenges.forEach(c=>{
+  const card=document.createElement('div');card.className='bg-white p-4 rounded shadow';
+  card.innerHTML=`<h3 class="font-bold">${c.title}</h3><p class="text-sm">${c.desc}</p><div class="mt-2"><span class="px-2 py-1 text-xs rounded ${priorityColor(c.priority)}">${c.priority}</span>${c.modelId?`<span class="ml-2 px-2 py-1 text-xs rounded bg-blue-200">${modelName(c.modelId)}</span>`:''}</div>`;
+  grid.appendChild(card);
+ });
+ root.appendChild(grid);
+ // Key Metrics
+ const metrics=document.createElement('div');metrics.className='grid grid-cols-1 md:grid-cols-3 gap-4 mt-4';
+ const modelsInDomain=state.models.filter(m=>m.domain===state.domain);
+ const ids=modelsInDomain.map(m=>m.id);
+ const usage=state.analytics.usageStats.filter(u=>ids.includes(u.modelId));
+ const bias=state.analytics.biasReduction.filter(b=>ids.includes(b.modelId));
+ const tasksSolved=usage.reduce((a,b)=>a+b.runs,0);
+ const efficiency=Math.round(usage.reduce((a,b)=>a+b.success,0)/ (usage.length||1));
+ const biasAvg=Math.round(bias.reduce((a,b)=>a+b.score,0)/(bias.length||1));
+ metrics.innerHTML=`<div class="bg-white p-4 rounded shadow"><div class="text-sm text-gray-500">Tasks Solved</div><div class="text-2xl font-bold">${tasksSolved}</div></div>
+ <div class="bg-white p-4 rounded shadow"><div class="text-sm text-gray-500">Efficiency (%)</div><div class="text-2xl font-bold">${efficiency}</div></div>
+ <div class="bg-white p-4 rounded shadow"><div class="text-sm text-gray-500">Bias Reduction (%)</div><div class="text-2xl font-bold ${biasAvg<state.settings.biasTarget?'text-red-600':'text-green-600'}">${biasAvg}</div></div>`;
+ root.appendChild(metrics);
+}
+function statusColor(s){return s==='Active'?'bg-green-200':s==='Idle'?'bg-yellow-200':'bg-red-200';}
+function priorityColor(p){return p==='High'?'bg-red-200':p==='Med'?'bg-yellow-200':'bg-green-200';}
+function modelName(id){const m=state.models.find(m=>m.id===id);return m?m.name:'';}
+// MODELS
+function renderModels(root){
+ const models=state.models.filter(m=>m.domain===state.domain);
+ if(!models.length){root.innerHTML='<p>No models for this domain. <button class="underline" id="resetDomain">Reset</button></p>';document.getElementById('resetDomain').onclick=()=>{state.domain=state.settings.defaultDomain;updateDomainSwitcher();renderRoute('models');};return;}
+ const table=document.createElement('table');table.className='min-w-full bg-white';
+ table.innerHTML='<thead><tr><th class="p-2 text-left">Model</th><th class="p-2">Plugins</th><th class="p-2">Inputs</th><th class="p-2">Outputs</th><th class="p-2">Status</th><th class="p-2">Actions</th></tr></thead>';
+ const tbody=document.createElement('tbody');
+ models.forEach(m=>{
+  const tr=document.createElement('tr');tr.className='hover:bg-gray-100 cursor-pointer';
+  tr.dataset.id=m.id; if(m.id===selectedModelId)tr.classList.add('bg-gray-100');
+  tr.innerHTML=`<td class="border p-2">${m.name}</td><td class="border p-2">${m.plugins.join(', ')}</td><td class="border p-2">${m.inputs.join(', ')}</td><td class="border p-2">${m.outputs.join(', ')}</td><td class="border p-2"><label class="inline-flex items-center cursor-pointer"><input type="checkbox" ${m.status==='Active'?'checked':''} data-toggle="${m.id}" class="sr-only"><span class="w-10 h-5 bg-gray-300 rounded-full relative"><span class="dot absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition"></span></span></label></td><td class="border p-2"><button class="text-blue-600 underline" data-config="${m.id}">Configure</button></td>`;
+  tbody.appendChild(tr);
+ });
+ table.appendChild(tbody);root.appendChild(table);
+ // event listeners
+ tbody.addEventListener('click',e=>{
+  const id=e.target.closest('tr')?.dataset.id;
+  if(e.target.dataset.config){openModal(e.target.dataset.config);e.stopPropagation();return;}
+  if(e.target.dataset.toggle){toggleModel(e.target.dataset.toggle);e.stopPropagation();return;}
+  if(id){selectedModelId=parseInt(id);renderModels(root);} // rerender to highlight and update pipeline
+ });
+ tbody.addEventListener('change',e=>{if(e.target.dataset.toggle)toggleModel(e.target.dataset.toggle);});
+ // Plugin operation zone
+ const zone=document.createElement('div');zone.className='flex gap-4 mt-4';
+ zone.innerHTML=`<div class="w-1/3 border rounded p-2" id="pluginCatalog"></div>
+ <div class="w-1/3 border rounded p-2 min-h-[200px]" id="pipelineArea"></div>
+ <div class="w-1/3 border rounded p-2" id="pipelineDetails"></div>`;
+ root.appendChild(zone);
+ const catalog=document.getElementById('pluginCatalog');
+ state.pluginsCatalog.forEach(p=>{const div=document.createElement('div');div.className='m-1 p-1 bg-gray-200 rounded cursor-move';div.textContent=p.name;div.dataset.plugin=p.name;catalog.appendChild(div);});
+ const pipeline=document.getElementById('pipelineArea');
+ const model=state.models.find(m=>m.id===selectedModelId);
+ model.plugins.forEach(pl=>{const div=document.createElement('div');div.className='m-1 p-1 bg-blue-200 rounded cursor-move flex justify-between items-center';div.dataset.plugin=pl;div.innerHTML=`<span>${pl}</span><button class="ml-2 text-xs" data-remove="${pl}">x</button>`;pipeline.appendChild(div);});
+ pipeline.addEventListener('click',e=>{if(e.target.dataset.remove){model.plugins=model.plugins.filter(p=>p!==e.target.dataset.remove);renderModels(root);}});
+ const details=document.getElementById('pipelineDetails');
+ model.plugins.forEach(pl=>{const info=state.pluginsCatalog.find(p=>p.name===pl);if(info){const div=document.createElement('div');div.className='mb-2';div.innerHTML=`<h4 class="font-bold">${pl}</h4><p class="text-xs">${info.purpose}</p><p class="text-xs">In: ${info.expectedInputs.join(', ')}</p><p class="text-xs">Out: ${info.expectedOutputs.join(', ')}</p>`;details.appendChild(div);}});
+ new Sortable(catalog,{group:{name:'plugins',pull:'clone',put:false},sort:false,animation:150});
+ new Sortable(pipeline,{group:'plugins',animation:150,onAdd:updatePipeline,onUpdate:updatePipeline});
+ const runBtn=document.createElement('button');runBtn.textContent='Run Pipeline';runBtn.className='mt-4 px-3 py-1 bg-green-600 text-white';runBtn.addEventListener('click',runPipeline);root.appendChild(runBtn);
+ const log=document.createElement('div');log.id='log';log.className='h-32 overflow-y-auto border mt-2 p-2 bg-white text-xs';root.appendChild(log);
+}
+function updatePipeline(){
+ const model=state.models.find(m=>m.id===selectedModelId);
+ const items=[...document.querySelectorAll('#pipelineArea [data-plugin]')];
+ model.plugins=items.map(i=>i.dataset.plugin);
+ renderModels(document.getElementById('content'));
+}
+function runPipeline(){
+ const model=state.models.find(m=>m.id===selectedModelId);
+ const log=document.getElementById('log');
+ model.plugins.forEach(pl=>{
+  const time=new Date().toLocaleTimeString();
+  const line=document.createElement('div');line.textContent=`[${time}] Ran ${pl}`;log.appendChild(line);log.scrollTop=log.scrollHeight;
+ });
+}
+function openModal(id){
+ const model=state.models.find(m=>m.id==id);
+ const form=document.getElementById('configForm');
+ form.inputs.value=model.inputs.join(', ');
+ form.outputs.value=model.outputs.join(', ');
+ form.dataset.id=id;
+ document.getElementById('modal').classList.remove('hidden');
+ document.getElementById('modal').setAttribute('aria-hidden','false');
+ form.inputs.focus();
+}
+function closeModal(){
+ document.getElementById('modal').classList.add('hidden');
+ document.getElementById('modal').setAttribute('aria-hidden','true');
+}
+function saveModelConfig(e){
+ e.preventDefault();const form=e.target;const model=state.models.find(m=>m.id==form.dataset.id);
+ model.inputs=form.inputs.value.split(',').map(s=>s.trim()).filter(Boolean);
+ model.outputs=form.outputs.value.split(',').map(s=>s.trim()).filter(Boolean);
+ closeModal();renderRoute('models');
+}
+function toggleModel(id){
+ const m=state.models.find(x=>x.id==id);m.status=m.status==='Active'?'Disabled':'Active';renderRoute('models');
+}
+// WORKFLOWS
+function renderWorkflows(root){
+ const workflows=state.workflows.filter(w=>w.domain===state.domain);
+ if(!workflows.length){root.innerHTML='<p>No workflows for this domain. <button class="underline" id="resetDomain">Reset</button></p>';document.getElementById('resetDomain').onclick=()=>{state.domain=state.settings.defaultDomain;updateDomainSwitcher();renderRoute('workflows');};return;}
+ const stages=['Research','Planning','Execution','Feedback'];
+ const board=document.createElement('div');board.className='grid grid-cols-1 md:grid-cols-4 gap-4';
+ stages.forEach(stage=>{
+  const col=document.createElement('div');col.className='border rounded bg-gray-50 p-2';
+  col.innerHTML=`<h3 class="font-bold mb-2">${stage}</h3><div class="space-y-2" id="col-${stage}"></div>`;board.appendChild(col);
+ });
+ root.appendChild(board);
+ workflows.forEach(w=>{
+  const card=document.createElement('div');card.className='bg-white p-2 rounded shadow cursor-move';card.dataset.id=w.id;
+  card.innerHTML=`<div class="font-bold">${w.title}</div><p class="text-xs">${w.desc}</p><div class="mt-1 flex items-center space-x-1"><span class="px-2 py-0.5 text-xs rounded ${priorityColor(w.priority)}">${w.priority}</span>${w.linkedModelId?`<span class="px-2 py-0.5 text-xs rounded bg-blue-200">${modelName(w.linkedModelId)}</span>`:''}</div>`;
+  document.getElementById(`col-${w.stage}`).appendChild(card);
+ });
+ stages.forEach(stage=>{
+  new Sortable(document.getElementById(`col-${stage}`),{group:'kanban',animation:150,onAdd:evt=>updateStage(evt,stage),onUpdate:evt=>updateStage(evt,stage)});
+  document.getElementById(`col-${stage}`).addEventListener('click',e=>{
+   const id=e.target.closest('[data-id]')?.dataset.id; if(id)openPanel(id);
+  });
+ });
+}
+function updateStage(evt,stage){
+ const id=evt.item.dataset.id;const wf=state.workflows.find(w=>w.id==id);wf.stage=stage;
+}
+function openPanel(id){
+ const wf=state.workflows.find(w=>w.id==id);const form=document.getElementById('workflowForm');
+ form.title.value=wf.title;form.desc.value=wf.desc;form.model.innerHTML='<option value="">None</option>'+state.models.filter(m=>m.domain===state.domain).map(m=>`<option value="${m.id}" ${wf.linkedModelId==m.id?'selected':''}>${m.name}</option>`).join('');
+ form.dataset.id=id;
+ document.getElementById('panel').classList.remove('translate-x-full');
+ document.getElementById('panel').setAttribute('aria-hidden','false');
+ form.title.focus();
+}
+function closePanel(){
+ document.getElementById('panel').classList.add('translate-x-full');
+ document.getElementById('panel').setAttribute('aria-hidden','true');
+}
+function saveWorkflow(){
+ const form=document.getElementById('workflowForm');const wf=state.workflows.find(w=>w.id==form.dataset.id);
+ wf.title=form.title.value;wf.desc=form.desc.value;wf.linkedModelId=form.model.value?parseInt(form.model.value):null;
+ closePanel();renderRoute('workflows');
+}
+// ANALYTICS
+function renderAnalytics(root){
+ const filters=state.filters||{};
+ root.innerHTML=`<div class="flex flex-wrap gap-2 mb-4">
+ <input type="date" id="start" class="border p-1" value="${filters.start||''}">
+ <input type="date" id="end" class="border p-1" value="${filters.end||''}">
+ <select id="project" class="border p-1"><option>All Projects</option></select>
+ <select id="team" class="border p-1"><option>All Teams</option></select>
+ <button id="apply" class="px-3 py-1 bg-blue-600 text-white">Apply</button>
+ </div>
+ <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <canvas id="lineChart" height="150"></canvas>
+  <canvas id="barChart" height="150"></canvas>
+ </div>
+ <div class="mt-4"><canvas id="pieChart" height="150"></canvas></div>
+ <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+  <table class="bg-white" id="usageTable"><thead><tr><th class="p-2 text-left">Model</th><th class="p-2">Runs</th><th class="p-2">Avg Duration</th><th class="p-2">Success %</th><th class="p-2">Errors</th></tr></thead><tbody></tbody></table>
+  <table class="bg-white" id="qualityTable"><thead><tr><th class="p-2 text-left">Model</th><th class="p-2">Score</th><th class="p-2">Notes</th></tr></thead><tbody></tbody></table>
+ </div>`;
+ document.getElementById('apply').addEventListener('click',()=>{
+  state.filters={start:document.getElementById('start').value,end:document.getElementById('end').value};renderRoute('analytics');
+ });
+ const ids=state.models.filter(m=>m.domain===state.domain).map(m=>m.id);
+ const runs=state.analytics.runs.filter(r=>ids.includes(r.modelId)).filter(r=>{
+  if(!state.filters||(!state.filters.start&&!state.filters.end))return true;
+  const d=r.date;
+  return (!state.filters.start||d>=state.filters.start)&&(!state.filters.end||d<=state.filters.end);
+ });
+ const byDate={};runs.forEach(r=>{byDate[r.date]=(byDate[r.date]||0)+r.count;});
+ const lineData={labels:Object.keys(byDate),datasets:[{label:'Runs',data:Object.values(byDate)}]};
+ if(charts.line)charts.line.destroy();charts.line=new Chart(document.getElementById('lineChart'),{type:'line',data:lineData});
+ const bias=state.analytics.biasReduction.filter(b=>ids.includes(b.modelId));
+ const barData={labels:bias.map(b=>modelName(b.modelId)),datasets:[{label:'Bias Reduction',data:bias.map(b=>b.score)}]};
+ if(charts.bar)charts.bar.destroy();charts.bar=new Chart(document.getElementById('barChart'),{type:'bar',data:barData});
+ const wf=state.workflows.filter(w=>w.domain===state.domain);
+ const stageCounts={Research:0,Planning:0,Execution:0,Feedback:0};wf.forEach(w=>stageCounts[w.stage]++);
+ const pieData={labels:Object.keys(stageCounts),datasets:[{data:Object.values(stageCounts)}]};
+ if(charts.pie)charts.pie.destroy();charts.pie=new Chart(document.getElementById('pieChart'),{type:'doughnut',data:pieData});
+ const usageBody=document.querySelector('#usageTable tbody');usageBody.innerHTML='';
+ state.analytics.usageStats.filter(u=>ids.includes(u.modelId)).forEach(u=>{
+  const tr=document.createElement('tr');tr.innerHTML=`<td class="border p-2">${modelName(u.modelId)}</td><td class="border p-2 text-center">${u.runs}</td><td class="border p-2 text-center">${u.avgDuration}</td><td class="border p-2 text-center">${u.success}</td><td class="border p-2 text-center">${u.errors}</td>`;usageBody.appendChild(tr);
+ });
+ const qualBody=document.querySelector('#qualityTable tbody');qualBody.innerHTML='';
+ state.analytics.decisionQuality.filter(d=>ids.includes(d.modelId)).forEach(d=>{
+  const tr=document.createElement('tr');tr.innerHTML=`<td class="border p-2">${modelName(d.modelId)}</td><td class="border p-2 text-center">${d.score}</td><td class="border p-2">${d.notes}</td>`;qualBody.appendChild(tr);
+ });
+}
+// SETTINGS
+function renderSettings(root){
+ root.innerHTML=`<form id="settingsForm" class="space-y-2 max-w-md">
+ <div><label class="block text-sm">Org Name</label><input type="text" name="orgName" value="${state.settings.orgName}" class="w-full border p-1"></div>
+ <div><label class="block text-sm">Default Domain</label><select name="defaultDomain" class="w-full border p-1"><option ${state.settings.defaultDomain==='Strategy'?'selected':''}>Strategy</option><option ${state.settings.defaultDomain==='Finance'?'selected':''}>Finance</option><option ${state.settings.defaultDomain==='Marketing'?'selected':''}>Marketing</option></select></div>
+ <div><label class="block text-sm">High Priority Threshold (%)</label><input type="number" name="highPriorityThreshold" value="${state.settings.highPriorityThreshold}" class="w-full border p-1"></div>
+ <div><label class="block text-sm">Bias Reduction target %</label><input type="number" name="biasTarget" value="${state.settings.biasTarget}" class="w-full border p-1"></div>
+ <button class="px-3 py-1 bg-blue-600 text-white" type="submit">Save</button>
+ </form>`;
+ document.getElementById('settingsForm').addEventListener('submit',e=>{
+  e.preventDefault();const f=e.target;
+  state.settings.orgName=f.orgName.value;state.settings.defaultDomain=f.defaultDomain.value;state.settings.highPriorityThreshold=parseInt(f.highPriorityThreshold.value);state.settings.biasTarget=parseInt(f.biasTarget.value);
+  state.domain=state.settings.defaultDomain;updateDomainSwitcher();renderRoute('settings');
+ });
+}
+// Sidebar toggle
+function toggleSidebar(){
+ const sidebar=document.getElementById('sidebar');
+ const content=document.getElementById('content');
+ sidebar.classList.toggle('-translate-x-full');
+ if(sidebar.classList.contains('-translate-x-full'))content.classList.remove('ml-56');else content.classList.add('ml-56');
+}
+</script>
+</body>
+</html>
