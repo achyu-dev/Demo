@@ -7,6 +7,43 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Light mode styles */
+html.light {
+  @apply bg-white text-neutral-950;
+}
+
+html.light * {
+  @apply text-neutral-950;
+}
+
+html.light .border-neutral-800 {
+  @apply border-neutral-200;
+}
+
+html.light .bg-neutral-900 {
+  @apply bg-neutral-100;
+}
+
+html.light .text-neutral-300 {
+  @apply text-neutral-950;
+}
+
+html.light .text-neutral-400 {
+  @apply text-neutral-950;
+}
+
+html.light .text-neutral-500 {
+  @apply text-neutral-700;
+}
+
+html.light .hover\:bg-neutral-800:hover {
+  @apply bg-neutral-100;
+}
+
+html.light .gradient-text {
+  @apply bg-gradient-to-r from-cyan-600 to-emerald-600 bg-clip-text text-transparent;
+}
+
 .gradient-text {
   @apply bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent;
 }
@@ -32,6 +69,10 @@ html {
 .haptic-hover:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+html.light .haptic-hover:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .haptic-press:active {

@@ -8,34 +8,34 @@ import GradientText from '../../components/GradientText';
 export default function Customers() {
   const customerSegments = [
     {
-      title: "Aspiring founders",
-      pains: "Need guidance and hands-on help to validate ideas.",
-      value: "AI planning + community execution partners.",
-      features: "Lean plan generator, intrapreneur matching."
+      title: "NGOs & Non-Profit Schools",
+      pains: "Volunteer burnout, inconsistent teaching quality, limited student reach.",
+      value: "24×7 AI tutoring + volunteer dashboards + scalable learning infrastructure.",
+      features: "Curriculum integration, progress analytics, auto lesson planning."
     },
     {
-      title: "Intrapreneurs & freelancers",
-      pains: "Finding meaningful gigs and trusted clients.",
-      value: "Marketplace with credit-based trust.",
-      features: "Profiles, reviews, credit economy."
+      title: "Volunteer Educators & Mentors",
+      pains: "Overwhelming prep work, repetitive doubt-solving, no structured feedback.",
+      value: "AI co-pilot that handles fundamentals while you focus on mentorship.",
+      features: "Student weak-area reports, automated content generation, time savings."
     },
     {
-      title: "Student clubs & incubators",
-      pains: "Lack of curricula and execution frameworks.",
-      value: "Ready-to-run learning hub and challenge templates.",
-      features: "Case decks, live clinics, templates."
+      title: "Educational Institutions",
+      pains: "Scaling quality education without proportional cost increase.",
+      value: "Institutional AI infrastructure with full governance control.",
+      features: "Custom curriculum, advanced analytics, API integration, white-label options."
     },
     {
-      title: "SMEs",
-      pains: "Limited resources to test and adopt digital tools.",
-      value: "Affordable intrapreneur talent and AI planning.",
-      features: "Experiment backlog, milestone planner."
+      title: "After-School Programs",
+      pains: "Limited supervision hours, diverse student levels, resource constraints.",
+      value: "Self-paced AI learning with mentor oversight and progress tracking.",
+      features: "Adaptive content, multi-language support, offline sync capabilities."
     }
   ];
 
   return (
     <>
-      <Section title="Segments">
+      <Section title="Who We Serve">
         <motion.div 
           className="space-y-12"
           initial="hidden"
@@ -75,7 +75,7 @@ export default function Customers() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
               >
-                Pains: {segment.pains}
+                <strong>Challenges:</strong> {segment.pains}
               </motion.p>
               <motion.p 
                 className="mb-1 text-neutral-300"
@@ -84,7 +84,7 @@ export default function Customers() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
               >
-                Roognis value: {segment.value}
+                <strong>Roognis Solution:</strong> {segment.value}
               </motion.p>
               <motion.p 
                 className="mb-4 text-neutral-300"
@@ -93,7 +93,7 @@ export default function Customers() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
               >
-                Key features: {segment.features}
+                <strong>Key Features:</strong> {segment.features}
               </motion.p>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -101,9 +101,6 @@ export default function Customers() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
               >
-                <CTA href="/wishlist" variant="secondary">
-                  Join the Waitlist
-                </CTA>
               </motion.div>
             </motion.div>
           ))}

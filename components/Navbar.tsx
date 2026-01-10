@@ -1,5 +1,6 @@
-import Link from 'next/link';
-import Logo from './Logo';
+import Link from "next/link";
+import Logo from "./Logo";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Navbar() {
   return (
@@ -8,19 +9,23 @@ export default function Navbar() {
         <Link href="/" aria-label="Roognis home">
           <Logo />
         </Link>
-        <div className="flex space-x-4 text-sm">
-          <Link href="/about" className="hover:underline transition-all duration-200 hover:text-cyan-400">
+        <div className="flex items-center space-x-4 text-sm">
+          <Link
+            href="/about"
+            className="hover:underline transition-all duration-200 hover:text-cyan-400"
+          >
             About
           </Link>
-          <Link href="/customers" className="hover:underline transition-all duration-200 hover:text-cyan-400">
+          <Link
+            href="/customers"
+            className="hover:underline transition-all duration-200 hover:text-cyan-400"
+          >
             Customers
           </Link>
-          <Link href="/wishlist" className="hover:underline transition-all duration-200 hover:text-cyan-400">
-            Wishlist
-          </Link>
-          <Link href="https://discord.gg/c6AhgTs5zx" className="hover:underline transition-all duration-200 hover:text-cyan-400">
-            Community
-          </Link>
+          <span className="text-neutral-500 cursor-not-allowed">
+            Community (Coming Soon)
+          </span>
+          <ThemeToggle />
         </div>
       </nav>
     </header>
