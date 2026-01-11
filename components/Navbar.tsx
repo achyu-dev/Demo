@@ -22,6 +22,14 @@ export default function Navbar() {
           >
             Customers
           </Link>
+          <Link
+            href="https://www.instagram.com/roognis_singoor/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline transition-all duration-200 hover:text-cyan-400"
+          >
+            Instagram
+          </Link>
           <span className="text-neutral-500 cursor-not-allowed">
             Community (Coming Soon)
           </span>

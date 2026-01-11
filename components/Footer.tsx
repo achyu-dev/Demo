@@ -33,6 +33,16 @@ export default function Footer() {
             className="transition-opacity duration-200 hover:opacity-80"
             style={{ height: 35, width: 35 }}
           />
+          <SocialIcon
+            url="https://www.instagram.com/roognis_singoor/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram"
+            bgColor="transparent"
+            fgColor="#888888"
+            className="transition-opacity duration-200 hover:opacity-80"
+            style={{ height: 35, width: 35 }}
+          />
         </div>
       </div>
     </footer>
