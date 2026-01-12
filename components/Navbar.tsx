@@ -22,7 +22,7 @@ export default function Navbar() {
           >
             Customers
           </Link>
-           <Link
+          <Link
             href="https://substack.com/@roongis"
             target="_blank"
             rel="noopener noreferrer"

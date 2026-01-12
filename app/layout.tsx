@@ -9,10 +9,12 @@ export const metadata: Metadata = {
     default: "Roognis",
     template: "%s | Roognis",
   },
-  description: "Scale educational impact with 24×7 AI tutoring. Reduce volunteer burnout, personalize learning, and serve more students—₹120-₹200/month.",
+  description:
+    "Scale educational impact with 24×7 AI tutoring. Reduce volunteer burnout, personalize learning, and serve more students—₹120-₹200/month.",
   openGraph: {
     title: "Roognis",
-    description: "Scale educational impact with 24×7 AI tutoring. Reduce volunteer burnout, personalize learning, and serve more students—₹120-₹200/month.",
+    description:
+      "Scale educational impact with 24×7 AI tutoring. Reduce volunteer burnout, personalize learning, and serve more students—₹120-₹200/month.",
     url: "https://roognis.netlify.app",
     siteName: "Roognis",
     images: [

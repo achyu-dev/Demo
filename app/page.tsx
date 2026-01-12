@@ -4,8 +4,6 @@ import { motion } from "framer-motion";
 import Hero from "../components/Hero";
 import Section from "../components/Section";
 import Card from "../components/Card";
-import CTA from "../components/CTA";
-import GradientText from "../components/GradientText";
 import Script from "next/script";
 
 export default function Home() {

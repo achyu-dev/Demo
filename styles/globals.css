@@ -93,7 +93,8 @@ select:focus {
 
 /* Subtle pulse animation */
 @keyframes subtle-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

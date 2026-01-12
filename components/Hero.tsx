@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import CTA from "./CTA";
 import GradientText from "./GradientText";
 
 export default function Hero() {
@@ -34,9 +33,9 @@ export default function Hero() {
         educational institutions—delivering 24×7 personalized tutoring, reducing
         volunteer burnout, and scaling impact without diluting mission.
       </motion.p>
-     <span className="text-neutral-500 cursor-not-allowed">
-            Community (Coming Soon)
-          </span>
+      <span className="text-neutral-500 cursor-not-allowed">
+        Community (Coming Soon)
+      </span>
     </section>
   );
 }

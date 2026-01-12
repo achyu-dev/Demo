@@ -15,7 +15,14 @@ export default function Logo() {
           strokeLinecap="round"
         />
         <defs>
-          <linearGradient id="g" x1="0" y1="0" x2="24" y2="10" gradientUnits="userSpaceOnUse">
+          <linearGradient
+            id="g"
+            x1="0"
+            y1="0"
+            x2="24"
+            y2="10"
+            gradientUnits="userSpaceOnUse"
+          >
             <stop stopColor="#22d3ee" />
             <stop offset="1" stopColor="#34d399" />
           </linearGradient>
