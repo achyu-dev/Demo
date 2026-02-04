@@ -1,0 +1,118 @@
+name: 🐛 Bug Report
+description: Report an issue with the Roognis platform
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🐛 Bug Report
+
+        Thank you for taking the time to report an issue. Please help us diagnose the problem by filling out the following information.
+    validations:
+      required: true
+
+  - type: input
+    id: title
+    attributes:
+      label: 🧵 Bug Summary
+      description: Concisely describe the issue you're experiencing.
+      placeholder: "e.g. Navigation menu not responsive on mobile devices"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 📋 Steps to Reproduce
+      description: Provide a clear set of steps to reproduce the issue.
+      placeholder: |
+        1. Navigate to the homepage
+        2. Open developer tools and switch to mobile view
+        3. Click on the navigation menu button
+        4. Observe the layout issue
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: ✅ Expected Behavior
+      placeholder: e.g. "Navigation menu should display properly and be accessible on mobile devices"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: ❌ Actual Behavior
+      placeholder: e.g. "Navigation menu is cut off and buttons are not clickable"
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: 🌐 Affected Page/URL
+      placeholder: e.g. "https://roognis.netlify.app/" or "Homepage"
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: 🧪 Environment
+      description: Browser, OS, device type
+      placeholder: e.g. "Chrome 115, macOS Ventura, iPhone 14"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 📜 Console Logs / Screenshots
+      description: Paste any relevant console errors or attach screenshots
+      placeholder: "Paste console errors here or describe what you see"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 📁 Area Affected
+      multiple: true
+      options:
+        - Navigation/Header
+        - Homepage/Hero section
+        - About page
+        - Customers page
+        - Footer
+        - Theme toggle
+        - Mobile responsiveness
+        - Animations/Transitions
+        - Forms
+        - Links/Social media
+        - Performance/Loading
+        - Accessibility
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 🚨 Severity
+      options:
+        - Low (Minor visual issue, doesn't affect functionality)
+        - Medium (Affects functionality but has workaround)
+        - High (Major functionality broken)
+        - Critical (Site unusable/security issue)
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 🧠 Additional Notes
+      description: Add any other context, related issues, or potential solutions
+    validations:
+      required: false

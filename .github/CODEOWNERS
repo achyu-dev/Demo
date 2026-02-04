@@ -1,0 +1,12 @@
+# Roognis Core Team
+* @Roognis/founders
+* @Roognis/development
+
+# Frontend Components
+/components/ @Roognis/development
+/app/ @Roognis/development
+
+# Configuration Files
+*.config.* @Roognis/founders
+.env* @Roognis/founders
+package.json @Roognis/founders

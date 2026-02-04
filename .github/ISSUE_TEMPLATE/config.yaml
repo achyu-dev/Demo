@@ -1,0 +1,17 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 🗂️ Project Board
+    url: https://github.com/orgs/Roognis/projects/1/views/1
+    about: View the project board for ongoing work and updates
+
+  - name: 📚 Documentation
+    url: https://roognis.com
+    about: Visit our website for more information about Roognis
+
+  - name: 💬 Contact the Team
+    url: https://github.com/orgs/Roognis/teams/founders
+    about: Reach out to the Roognis founders team for general questions
+
+  - name: 🎓 Educational Partnership
+    url: https://www.instagram.com/roognis_singoor/
+    about: Connect with us for educational partnerships and collaborations
